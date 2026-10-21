@@ -132,9 +132,12 @@ Each has a unique name, description, Zod input schema, permission
 (`read` | `write` | `destructive`), per-turn cap, UI label and typed result.
 `ToolExecutor` enforces validation, the global call budget, per-tool caps,
 duplicate-call (loop) detection, owner approval for destructive actions
-(bound to a hash of the target as it was proposed), and read-only access for
-scheduled runs. Tools only use the service layer — no
-shell, code execution, network or credentials.
+(bound to a hash of the target as it was proposed), and read-only access (plus
+`notify_owner` and new notes) for scheduled runs. Tools use the service layer,
+with one opt-in exception: the `webfetch` and `websearch` tools use an injected
+`fetch` when the owner enables Web access in Settings (chat and scheduled runs). Each activity stores a one-line, 500-character summary
+of its input and output for the owner's expandable chip; web pages are capped
+like any other result. There is no shell, code execution or credential access.
 
 `propose_task_plan` (a `write` tool, so never offered to scheduled runs, once per
 turn) is neither immediate nor destructive in effect: it validates the model's

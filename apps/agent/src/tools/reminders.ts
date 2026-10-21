@@ -35,7 +35,7 @@ export const reminderTools = [
     name: "create_automation",
     description: [
       "Create a recurring schedule. kind: 'reminder' (show message, no AI), 'task_digest' (deterministic summary of due/overdue tasks, no AI),",
-      "or 'agent_prompt' (run an AI prompt with read-only tools; use only when AI reasoning is truly needed).",
+      "or 'agent_prompt' (run an AI prompt with read-only tools, notifications and new-note creation; use only when AI reasoning is truly needed).",
       "schedule examples: {type:'daily',time:'09:00'}, {type:'weekly',days:[5],time:'17:00'} (0=Sunday),",
       "{type:'monthly',day:1,time:'08:00'}, {type:'interval',minutes:120}, {type:'once',at:'2026-01-31T09:00'}. Times are local.",
     ].join(" "),

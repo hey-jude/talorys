@@ -230,6 +230,14 @@ function AiTab({ settings }: { settings: Settings }) {
             <Switch checked={settings.autoMemory} onChange={(v) => save.mutate({ autoMemory: v })} label="Learn from conversations" />
           </div>
         </Row>
+        <Row
+          label="Web access"
+          hint="Lets the agent read pages and search the web. URLs and queries leave Cloudflare, and page content is untrusted. Web search needs a Tavily API key on the server."
+        >
+          <div className="flex justify-end">
+            <Switch checked={settings.webAccess} onChange={(v) => save.mutate({ webAccess: v })} label="Web access" />
+          </div>
+        </Row>
         <Row label="Demo mode" hint="Replaces Workers AI with a simple offline responder. Useful when your AI quota is exhausted. Never enabled automatically.">
           <div className="flex justify-end">
             <Switch checked={settings.demoMode} onChange={(v) => save.mutate({ demoMode: v })} label="Demo mode" />

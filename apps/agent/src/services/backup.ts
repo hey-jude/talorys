@@ -17,7 +17,7 @@ import { decodeTools } from "../db/repositories/conversations";
  * Settings a backup may never change: they control cost and model behaviour, and a
  * backup file is untrusted input. The owner changes them in Settings instead.
  */
-export const IMPORT_IGNORED_SETTINGS = ["model", "limits", "demoMode", "autoMemory", "memoryHistory"] as const;
+export const IMPORT_IGNORED_SETTINGS = ["model", "limits", "demoMode", "autoMemory", "webAccess", "memoryHistory"] as const;
 
 /** Builds a portable backup. Sessions, login attempts and credentials are never exported. */
 export function exportData(s: Services): Backup {

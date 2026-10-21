@@ -107,6 +107,19 @@ is the contact push services see. It defaults to the app's own URL as recorded
 when each device subscribed. Set it with `npx wrangler secret put VAPID_SUBJECT`;
 a plain variable would be dropped when an update regenerates the Worker config.
 
+## Web access
+
+Web tools are off by default. Turn on **Settings → AI → Web access** to give the
+agent `webfetch` (read a page) and `websearch` (find pages). Web search also
+needs a [Tavily](https://tavily.com) API key as a Worker secret:
+
+```bash
+npx wrangler secret put TAVILY_API_KEY    # add -c wrangler.standalone.jsonc for a one-Worker deploy
+```
+
+Without the key, Settings still allows web access but only `webfetch` is offered.
+The installer does not create this secret; page fetching works without it.
+
 ## Idempotency and recovery
 
 - The manifest records the installation id; re-runs reuse the same names.

@@ -13,6 +13,7 @@ export const DEFAULT_SETTINGS: Settings = {
   limits: { ...DEFAULT_LIMITS },
   autoMemory: true,
   demoMode: false,
+  webAccess: false,
   memoryHistory: { ...DEFAULT_MEMORY_HISTORY },
   updateCheck: true,
 };

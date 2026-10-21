@@ -40,6 +40,11 @@
 
   --animate-fade-in: fade-in 160ms ease-out;
   --animate-slide-up: slide-up 180ms ease-out;
+  --animate-spin-slow: spin-slow 1.8s linear infinite;
+}
+
+@keyframes spin-slow {
+  to { transform: rotate(360deg); }
 }
 
 @keyframes fade-in {

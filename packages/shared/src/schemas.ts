@@ -122,6 +122,8 @@ export interface ToolActivity {
   label: string;
   status: "running" | "success" | "error";
   error?: string;
+  /** One-line input/output summaries the owner can expand; web results are capped like any other output. */
+  detail?: { input?: string; output?: string };
   /** Set when a destructive tool call is waiting for (or got) the owner's approval. */
   approval?: PendingAction;
   /** Set when the agent proposed a task plan; tasks exist only after the owner confirms it. */
@@ -135,6 +137,12 @@ export const toolActivitySchema = z.object({
   label: z.string(),
   status: z.enum(["running", "success", "error"]),
   error: z.string().optional(),
+  detail: z
+    .object({
+      input: z.string().max(500).optional(),
+      output: z.string().max(500).optional(),
+    })
+    .optional(),
   approval: z
     .object({
       id: z.string(),
@@ -336,6 +344,8 @@ export const settingsSchema = z.object({
   autoMemory: z.boolean(),
   /** Documented demo mode: uses the deterministic mock provider instead of Workers AI. */
   demoMode: z.boolean(),
+  /** Allow the agent to fetch pages and search the web. Off by default: this is the only outbound network access. */
+  webAccess: z.boolean(),
   memoryHistory: memoryHistorySettingsSchema,
   /** Check the npm registry once a day for a newer Talorys release. */
   updateCheck: z.boolean(),

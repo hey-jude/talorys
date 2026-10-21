@@ -7,6 +7,7 @@ import {
   ArrowUp,
   Check,
   CheckCircle2,
+  ChevronDown,
   Copy,
   History,
   Loader2,
@@ -480,24 +481,37 @@ function UserBubble({ text }: { text: string }) {
   );
 }
 
-function ToolChip({ tool }: { tool: ToolActivity }) {
-  return (
-    <span
-      title={tool.error}
-      className={cn(
-        "inline-flex max-w-full items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs",
-        tool.status === "error" ? "border-danger/30 bg-danger-soft text-danger" : "border-border bg-subtle text-fg-muted",
-      )}
-    >
+function ToolChip({ tool, open, onToggle }: { tool: ToolActivity; open: boolean; onToggle: () => void }) {
+  const expandable = !!(tool.detail || tool.error);
+  const className = cn(
+    "inline-flex max-w-full items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs",
+    tool.status === "error" ? "border-danger/30 bg-danger-soft text-danger" : "border-border bg-subtle text-fg-muted",
+    expandable && "hover:border-fg-subtle/50 hover:text-fg",
+  );
+  const body = (
+    <>
       {tool.status === "running" ? (
-        <Loader2 className="h-3 w-3 shrink-0 animate-spin" />
+        <Loader2 className="h-3 w-3 shrink-0 animate-spin-slow motion-reduce:animate-none" />
       ) : tool.status === "success" ? (
         <CheckCircle2 className="h-3 w-3 shrink-0 text-success" />
       ) : (
         <XCircle className="h-3 w-3 shrink-0" />
       )}
       <span className="truncate">{tool.label}</span>
-    </span>
+      {expandable && <ChevronDown className={cn("h-3 w-3 shrink-0 transition-transform", open && "rotate-180")} />}
+    </>
+  );
+  if (!expandable) {
+    return (
+      <span title={tool.error} className={className}>
+        {body}
+      </span>
+    );
+  }
+  return (
+    <button type="button" title={tool.error} aria-expanded={open} {...(open ? { "aria-controls": `tool-detail-${tool.id}` } : {})} onClick={onToggle} className={className}>
+      {body}
+    </button>
   );
 }
 
@@ -517,6 +531,8 @@ function AssistantBubble({
   onRetry?: () => void;
 }) {
   const [copied, setCopied] = useState(false);
+  const [openTool, setOpenTool] = useState<string | null>(null);
+  const openDetail = tools.find((t) => t.id === openTool && (t.detail || t.error));
   return (
     <div className="group flex gap-3 animate-fade-in">
       <Logo className="mt-0.5 h-6 w-6 shrink-0" />
@@ -524,8 +540,30 @@ function AssistantBubble({
         {tools.length > 0 && (
           <div role="group" className="flex flex-wrap gap-1.5" aria-label="Actions taken">
             {tools.map((t) => (
-              <ToolChip key={t.id} tool={t} />
+              <ToolChip key={t.id} tool={t} open={openTool === t.id} onToggle={() => setOpenTool(openTool === t.id ? null : t.id)} />
             ))}
+          </div>
+        )}
+        {openDetail && (
+          <div id={`tool-detail-${openDetail.id}`} className="space-y-2 rounded-xl border border-border bg-subtle px-3 py-2.5 text-xs">
+            {openDetail.error && (
+              <div>
+                <p className="mb-1 text-[10px] font-medium uppercase tracking-wider text-danger">Error</p>
+                <pre className="whitespace-pre-wrap break-words font-mono text-[11px] leading-5 text-danger">{openDetail.error}</pre>
+              </div>
+            )}
+            {openDetail.detail?.input && (
+              <div>
+                <p className="mb-1 text-[10px] font-medium uppercase tracking-wider text-fg-subtle">Input</p>
+                <pre className="whitespace-pre-wrap break-words font-mono text-[11px] leading-5 text-fg-muted">{openDetail.detail.input}</pre>
+              </div>
+            )}
+            {openDetail.detail?.output && (
+              <div>
+                <p className="mb-1 text-[10px] font-medium uppercase tracking-wider text-fg-subtle">Output</p>
+                <pre className="whitespace-pre-wrap break-words font-mono text-[11px] leading-5 text-fg-muted">{openDetail.detail.output}</pre>
+              </div>
+            )}
           </div>
         )}
         {tools.map((t) => t.approval && <ApprovalCard key={t.approval.id} action={t.approval} />)}

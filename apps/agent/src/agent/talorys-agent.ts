@@ -104,7 +104,10 @@ export class TalorysAgent extends Agent<Env, AgentState> {
   }
 
   runner(): AgentRunner {
-    return new AgentRunner(this.services, this.aiProvider(), semanticExtensions(this.services, this.env, (work) => this.ctx.waitUntil(work)));
+    const web = this.services.settings.get().webAccess
+      ? { fetch, ...(this.env.TAVILY_API_KEY ? { tavilyApiKey: this.env.TAVILY_API_KEY } : {}) }
+      : undefined;
+    return new AgentRunner(this.services, this.aiProvider(), semanticExtensions(this.services, this.env, (work) => this.ctx.waitUntil(work)), web);
   }
 
   refreshUnread(): void {

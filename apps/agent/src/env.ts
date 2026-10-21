@@ -17,6 +17,8 @@ export interface Env {
   VAPID_PRIVATE_KEY?: string;
   /** Contact sent to push services ("mailto:..." or "https://..."). Defaults to the app's own URL. */
   VAPID_SUBJECT?: string;
+  /** Tavily API key for the websearch tool. Optional: without it, websearch is not offered. */
+  TAVILY_API_KEY?: string;
   /** "development" enables local-only conveniences (mock AI, http cookies). Never set in production. */
   TALORYS_ENV?: string;
   /** Development only: use the deterministic mock AI provider. */

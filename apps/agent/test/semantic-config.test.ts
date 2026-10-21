@@ -300,7 +300,7 @@ async function compareRunners(s: Services, ext: ReturnType<typeof semanticExtens
     expect(hooked.calls[i]!.system).toBe(upstream.calls[i]!.system);
     expect(toolShape(hooked.calls[i]!)).toEqual(toolShape(upstream.calls[i]!));
   }
-  expect(toolShape(hooked.calls[0]!).map((t) => t.name)).toEqual(ALL_TOOLS.map((t) => t.name));
+  expect(toolShape(hooked.calls[0]!).map((t) => t.name)).toEqual(ALL_TOOLS.filter((t) => !t.requiresWeb).map((t) => t.name));
   expect(upstream.calls[0]!.system).toContain("Prefers green tea in the morning");
 }
 

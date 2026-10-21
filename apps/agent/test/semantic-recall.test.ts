@@ -843,7 +843,7 @@ describe("golden recall replay", () => {
       await chatOnce(new AgentRunner(s, hooked, ext), c.query);
       expect(hooked.calls[0]!.system).toBe(upstream.calls[0]!.system);
       expect(hooked.calls[0]!.system).toContain(expected.join("\n"));
-      expect(hooked.calls[0]!.tools.map((t) => t.name)).toEqual(ALL_TOOLS.map((t) => t.name));
+      expect(hooked.calls[0]!.tools.map((t) => t.name)).toEqual(ALL_TOOLS.filter((t) => !t.requiresWeb).map((t) => t.name));
     });
   });
 

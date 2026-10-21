@@ -10,7 +10,7 @@ import { useI18n } from "../lib/i18n";
 const KIND_META: Record<AutomationKind, { label: string; icon: typeof Bell; hint: string }> = {
   reminder: { label: "Reminder", icon: Bell, hint: "Shows your message in the notification center. No AI used." },
   task_digest: { label: "Task digest", icon: ListChecks, hint: "Summarizes overdue and due-today tasks. No AI used." },
-  agent_prompt: { label: "AI routine", icon: Bot, hint: "Runs a prompt with read-only tools. Uses Workers AI and counts toward the daily scheduled-AI budget." },
+  agent_prompt: { label: "AI routine", icon: Bot, hint: "Runs a prompt with read-only tools and new-note creation. Uses Workers AI and counts toward the daily scheduled-AI budget." },
 };
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];

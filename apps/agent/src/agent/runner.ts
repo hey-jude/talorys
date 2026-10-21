@@ -3,7 +3,8 @@ import type { Services } from "../services/container";
 import { type AIProvider, classifyAiError, estimateTokens, type ProviderTool, usageOfFailure } from "../ai/provider";
 import { AppError, NotFoundError } from "../api/errors";
 import { ALL_TOOLS, ToolExecutor, type ToolDefinition } from "../tools";
-import { clip } from "../services/text";
+import type { WebAccess } from "../tools/registry";
+import { clip, toolDetail } from "../services/text";
 import { buildSystemPrompt } from "./prompt";
 import { SUMMARIZE_THRESHOLD, buildContextWindow, memoryTokenBudget, selectRelevantMemories, summarizationPrompt } from "./memory";
 import type { RunnerExtensions } from "../semantic/hooks";
@@ -80,6 +81,8 @@ export class AgentRunner {
     private readonly services: Services,
     private readonly provider: AIProvider | null,
     private readonly ext?: RunnerExtensions,
+    /** Present only when the owner enabled Web access in Settings. */
+    private readonly web?: WebAccess,
   ) {}
 
   async *chat(input: TurnInput): AsyncGenerator<ChatStreamEvent> {
@@ -153,6 +156,8 @@ export class AgentRunner {
         autoMemory: settings.autoMemory,
         memories,
         conversationSummary: summary,
+        webAccess: !!this.web,
+        webSearch: !!this.web?.tavilyApiKey,
         ...(items ? { items } : {}),
       });
       const historyBudget = Math.max(500, limits.maxContextTokens - estimateTokens(baseSystem) - 600);
@@ -190,13 +195,15 @@ export class AgentRunner {
             autoMemory: settings.autoMemory,
             memories,
             conversationSummary: summary,
+            webAccess: !!this.web,
+            webSearch: !!this.web?.tavilyApiKey,
             ...(items ? { items } : {}),
           });
 
       // 3. Tools with per-turn limits.
       executor = new ToolExecutor(
         this.ext?.tools ?? ALL_TOOLS,
-        { services: s, timezone: settings.timezone, mode: "chat", conversationId: conversation.id },
+        { services: s, timezone: settings.timezone, mode: "chat", conversationId: conversation.id, ...(this.web ? { web: this.web } : {}) },
         { maxToolCalls: limits.maxToolCalls },
       );
       const providerTools = toProviderTools(executor);
@@ -219,11 +226,13 @@ export class AgentRunner {
           text += event.delta;
           yield { type: "text", delta: event.delta };
         } else if (event.type === "tool-start") {
+          const input = toolDetail(event.input);
           const activity: ToolActivity = {
             id: event.id,
             name: event.name,
             label: toolLabel(turnTools.find(event.name), event.name, event.input),
             status: "running",
+            ...(input ? { detail: { input } } : {}),
           };
           tools.push(activity);
           yield { type: "tool", tool: { ...activity } };
@@ -232,6 +241,8 @@ export class AgentRunner {
           if (activity) {
             activity.status = event.error ? "error" : "success";
             if (event.error) activity.error = event.error.slice(0, 300);
+            const output = toolDetail(event.output);
+            if (output) activity.detail = { ...activity.detail, output };
             const approval = turnTools.approvalFor(event.id);
             if (approval) activity.approval = approval;
             const planId = turnTools.planFor(event.id);
@@ -268,15 +279,15 @@ export class AgentRunner {
     }
   }
 
-  /** Runs an AI automation prompt with read-only tools. Returns the reply text. */
+  /** Runs an AI automation prompt with read-only tools, notifications and new notes. Returns the reply text. */
   async runScheduledPrompt(prompt: string, signal?: AbortSignal): Promise<string> {
     const s = this.services;
     const settings = s.settings.get();
     if (!this.provider) throw new AppError("AI_UNAVAILABLE", "Workers AI is not configured.");
     const executor = new ToolExecutor(
       this.ext?.tools ?? ALL_TOOLS,
-      { services: s, timezone: settings.timezone, mode: "scheduled" },
-      { maxToolCalls: Math.min(settings.limits.maxToolCalls, 4) },
+      { services: s, timezone: settings.timezone, mode: "scheduled", ...(this.web ? { web: this.web } : {}) },
+      { maxToolCalls: settings.limits.maxToolCalls },
     );
     const system = buildSystemPrompt({
       agentName: settings.agentName,
@@ -288,6 +299,8 @@ export class AgentRunner {
         memoryTokenBudget(settings.limits),
       ),
       scheduled: true,
+      webAccess: !!this.web,
+      webSearch: !!this.web?.tavilyApiKey,
     });
     const providerTools = toProviderTools(executor);
     let text = "";
@@ -298,7 +311,7 @@ export class AgentRunner {
         system,
         messages: [{ role: "user", content: prompt }],
         tools: providerTools,
-        maxIterations: Math.min(settings.limits.maxAgentIterations, 3),
+        maxIterations: settings.limits.maxAgentIterations,
         maxOutputTokens: Math.min(settings.limits.maxOutputTokens, 600),
         temperature: settings.temperature,
         toolBudgetExhausted: () => executor.budgetExhausted(),

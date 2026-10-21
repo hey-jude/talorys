@@ -5,13 +5,22 @@ import type { Services } from "../services/container";
 
 export type ToolPermission = "read" | "write" | "destructive";
 
+/** Outbound access for the opt-in web tools. `fetch` is injected so tests never hit the network. */
+export interface WebAccess {
+  fetch: typeof fetch;
+  /** Without a key the websearch tool is not offered at all. */
+  tavilyApiKey?: string;
+}
+
 export interface ToolContext {
   services: Services;
   timezone: string;
-  /** "chat" for interactive turns; "scheduled" for automation runs (read-only + notify). */
+  /** "chat" for interactive turns; "scheduled" for automation runs (reads, notify, new notes). */
   mode: "chat" | "scheduled";
   /** The chat conversation, which owns any destructive actions proposed during the turn. */
   conversationId?: string;
+  /** Present only when Settings → AI → Web access is on. */
+  web?: WebAccess;
 }
 
 /** The exact target of a destructive call, resolved before anything changes. */
@@ -31,6 +40,10 @@ interface BaseTool<S extends z.ZodType> {
   input: S;
   /** Max invocations of this tool in a single turn (in addition to the global budget). */
   maxCallsPerTurn?: number;
+  /** Only offered when the turn has web access (Settings → AI → Web access). */
+  requiresWeb?: boolean;
+  /** Extra availability check, e.g. websearch needs an API key. */
+  available?: (ctx: ToolContext) => boolean;
   /** Short human-readable label for the UI, e.g. "Adding task “Buy milk”". */
   label: (input: z.infer<S>) => string;
 }
@@ -103,10 +116,18 @@ export class ToolExecutor {
     return this.calls >= this.limits.maxToolCalls;
   }
 
-  /** Tools permitted in this context. Scheduled runs never get write or destructive tools. */
+  /** Tools permitted in this context. Scheduled runs get reads, notifications and new notes only. */
   available(): ToolDefinition[] {
     if (this.limits.maxToolCalls <= 0) return [];
-    return this.tools.filter((t) => this.ctx.mode === "chat" || t.permission === "read" || t.name === "notify_owner");
+    return this.tools
+      .filter(
+        (t) =>
+          this.ctx.mode === "chat" ||
+          t.permission === "read" ||
+          t.name === "notify_owner" ||
+          t.name === "create_note",
+      )
+      .filter((t) => (!t.requiresWeb || this.ctx.web !== undefined) && t.available?.(this.ctx) !== false);
   }
 
   find(name: string): ToolDefinition | undefined {

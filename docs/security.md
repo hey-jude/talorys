@@ -79,16 +79,36 @@ the Worker for every route except `GET /api/health`, `POST /api/auth/login` and
 - The agent cannot erase text on its own: `update_note` only renames a note or
   appends to it, and `update_memory` saves the new wording as a new memory while
   the old one is kept as a past fact.
-- Scheduled AI runs get read-only tools plus `notify_owner`.
+- Scheduled AI runs get read-only tools, `notify_owner` and `create_note` (new
+  notes only; `update_note`, `replace_note_content` and `delete_note` are not
+  available).
 - Per-request limits: tool calls, per-tool caps, duplicate-call detection,
   reasoning steps, output and context tokens; daily caps on AI requests and
   scheduled AI runs. Every model call (each tool-loop step and each history
   summary) is counted against the daily cap before it is made, and the SDK's
   automatic retries are off so no call goes uncounted. A scheduled AI run and an
   embedding request are also counted before the call, so concurrent requests
-  cannot overrun their caps.
-- No shell, code execution, outbound HTTP, credentials or deployment tools exist.
-  Web Push sends are made by the notification service, never by a tool.
+  cannot overrun their caps. Scheduled runs use the configured tool-call and
+  reasoning-step limits like chat turns.
+- No shell, code execution, credentials or deployment tools exist. Web Push
+  sends are made by the notification service, never by a tool.
+- **Web access** is the only outbound HTTP a tool can make, and it is off by
+  default (Settings → AI). When on, `webfetch` and `websearch` are offered in
+  chat and scheduled runs; a restored backup cannot enable the setting.
+  - `webfetch` allows `http`/`https` on default ports only, rejects credentials
+    in the URL, and blocks localhost, `.local`/`.internal`, cloud metadata hosts
+    and private/link-local IPv4 and IPv6 literal ranges on every redirect hop
+    (at most 3 hops). Each request is limited to 8 seconds and 512 KiB, only
+    text content types are accepted, scripts/styles are stripped, and the result
+    is truncated before it reaches the model.
+  - `websearch` sends the query to Tavily with the `TAVILY_API_KEY` Worker
+    secret and returns titles, URLs and snippets only.
+  - Page and snippet text is untrusted data: the system prompt tells the model
+    never to follow instructions found there.
+  - Residual risk: Workers cannot resolve DNS before `fetch`, so a public
+    hostname that later resolves to a private address (DNS rebinding) cannot be
+    detected. Scheduled runs fetch without a live owner, so injected page text
+    can shape a notification or a new note. Keep this off unless you need it.
 
 ## Push notifications
 

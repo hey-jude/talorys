@@ -151,16 +151,34 @@ describe("prompt-injection and destructive-action defenses", () => {
     });
   });
 
-  it("scheduled runs only get read-only tools plus notifications", async () => {
+  it("scheduled runs only get read-only tools, notifications and new notes", async () => {
     await inAgent((agent) => {
       const ex = new ToolExecutor(ALL_TOOLS, { services: agent.services, timezone: "UTC", mode: "scheduled" }, { maxToolCalls: 5 });
       const names = ex.available().map((t) => t.name);
       expect(names).toContain("list_tasks");
       expect(names).toContain("notify_owner");
+      expect(names).toContain("create_note");
       expect(names).not.toContain("create_task");
       expect(names).not.toContain("delete_task");
       expect(names).not.toContain("forget_memory");
+      expect(names).not.toContain("update_note");
+      expect(names).not.toContain("replace_note_content");
+      expect(names).not.toContain("delete_note");
     });
+  });
+
+  it("describes fetch-only web access when no search key is set", () => {
+    const prompt = buildSystemPrompt({
+      agentName: "Talorys",
+      timezone: "UTC",
+      now: new Date(),
+      autoMemory: false,
+      memories: [],
+      webAccess: true,
+      webSearch: false,
+    });
+    expect(prompt).toContain("fetching only");
+    expect(prompt).not.toContain("Use websearch");
   });
 
   it("marks stored content as data, not instructions, in the system prompt", () => {
